@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>收入纳税明细</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    background:#e9e9e9;color:#333;font-size:16px;
+    max-width:390px;margin:0 auto;position:relative;min-height:100vh;
+    box-shadow:0 0 24px rgba(0,0,0,.08);
+    -webkit-font-smoothing:antialiased;
+  }
+  :root{
+    --blue:#2b7de9; --blue-dark:#1c6cd6; --grey:#9a9a9a;
+    --line:#f0f0f0; --bg:#f5f6f7;
+  }
+  /* ===== 状态栏（实时时间） ===== */
+  .statusbar{
+    height:44px;background:#fff;display:flex;align-items:center;justify-content:space-between;
+    padding:0 16px;font-size:14px;color:#111;font-weight:500;
+  }
+  .statusbar .right{display:flex;align-items:center;gap:6px;}
+  .sb-icon{width:16px;height:12px;display:inline-block;}
+  .battery{width:22px;height:11px;border:1px solid #111;border-radius:2px;position:relative;}
+  .battery::after{content:"";position:absolute;right:-3px;top:3px;width:2px;height:5px;background:#111;border-radius:0 1px 1px 0;}
+  .battery .fill{position:absolute;left:1px;top:1px;bottom:1px;width:70%;background:#111;border-radius:1px;}
+  /* ===== 导航栏 ===== */
+  .navbar{
+    height:48px;background:#fff;display:flex;align-items:center;justify-content:space-between;
+    padding:0 16px;border-bottom:1px solid #f5f5f5;
+  }
+  .nav-left,.nav-right{min-width:60px;font-size:16px;color:var(--blue);}
+  .nav-right{text-align:right;}
+  .nav-title{font-size:17px;color:#333;font-weight:400;}
+  .back{display:flex;align-items:center;gap:2px;cursor:pointer;}
+  .back svg{width:12px;height:20px;}
+  /* ===== 分组标题（蓝竖条） ===== */
+  .group-title{
+    background:#fff;padding:14px 16px;display:flex;align-items:center;
+    font-size:15px;font-weight:bold;color:#333;
+  }
+  .group-title::before{
+    content:"";width:4px;height:15px;background:var(--blue);border-radius:2px;margin-right:8px;
+  }
+  .gap{height:10px;background:var(--bg);}
+  /* ===== 通用行 ===== */
+  .row{
+    background:#fff;display:flex;align-items:center;justify-content:space-between;
+    padding:16px;
+  }
+  .row .label{font-size:16px;color:#333;}
+  .row .val{font-size:16px;color:#333;display:flex;align-items:center;gap:8px;}
+  .row .arrow{color:#c8c8c8;font-size:18px;}
+  /* ===== 所得类型勾选 ===== */
+  .type-item{
+    background:#fff;display:flex;align-items:center;padding:16px;
+    border-bottom:1px solid #f5f5f5;
+  }
+  .type-item:last-child{border-bottom:none;}
+  .check{
+    width:22px;height:22px;border-radius:50%;background:var(--blue);
+    display:flex;align-items:center;justify-content:center;margin-right:16px;flex-shrink:0;
+  }
+  .check svg{width:12px;height:12px;}
+  .type-item .name{font-size:16px;color:#333;}
+  .other-type{
+    background:#fff;text-align:center;padding:16px;color:var(--blue);font-size:15px;
+  }
+  /* ===== 按钮 ===== */
+  .btn-query{
+    display:block;width:calc(100% - 32px);margin:30px 16px;
+    background:var(--blue);color:#fff;border:none;border-radius:10px;
+    height:48px;font-size:17px;cursor:pointer;
+  }
+  .btn-query:active{background:var(--blue-dark);}
+  /* ===== 结果合计卡片 ===== */
+  .sum-card{background:#fff;padding:2px 16px;}
+  .sum-row{display:flex;justify-content:space-between;align-items:center;padding:13px 0;border-bottom:1px solid #f5f5f5;}
+  .sum-row:last-child{border-bottom:none;}
+  .sum-row .k{font-size:16px;color:#333;}
+  .sum-row .k .q{display:inline-flex;width:16px;height:16px;border:1px solid var(--blue);color:var(--blue);border-radius:50%;font-size:11px;align-items:center;justify-content:center;margin-left:4px;margin-right:4px;vertical-align:middle;}
+  .sum-row .v{font-size:15px;color:#333;font-weight:400;}
+  /* ===== 明细卡片 ===== */
+  .detail-card{background:#fff;padding:12px 14px;}
+  .detail-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;}
+  .detail-head .t{font-size:17px;font-weight:500;color:#111;}
+  .detail-head .p{font-size:15px;color:#333;}
+  .detail-line{font-size:14px;color:#9a9a9a;margin-bottom:3px;display:flex;align-items:center;line-height:1.4;}
+  .detail-line .k{color:#aaa;}
+  .detail-line .v2{color:#9a9a9a;flex:1;}
+  .detail-line .arr{color:#ccc;}
+  .gap{height:10px;background:var(--bg);}
+  .add-btn{
+    display:block;width:calc(100% - 32px);margin:20px 16px;
+    background:#fff;color:var(--blue);border:1px dashed var(--blue);border-radius:10px;
+    height:46px;font-size:15px;cursor:pointer;
+  }
+  /* 多选模式 */
+  .select-box{
+    width:20px;height:20px;border-radius:50%;border:2px solid #ccc;margin-right:12px;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .select-box.checked{background:var(--blue);border-color:var(--blue);}
+  .select-box.checked svg{display:block;}
+  .select-box svg{display:none;width:10px;height:10px;}
+  .detail-card.multi{display:flex;align-items:flex-start;cursor:pointer;}
+  .multi-bar{display:none;background:#fff;padding:12px 16px;position:sticky;bottom:0;border-top:1px solid #eee;}
+  .multi-bar.show{display:flex;justify-content:space-between;align-items:center;}
+  .multi-bar .sel-count{font-size:14px;color:#333;}
+  .multi-bar .del-sel{color:#f56c6c;font-size:15px;cursor:pointer;}
+  /* ===== 编辑页与表单组件 ===== */
+  .form-group{background:#fff;margin-top:10px;}
+  .form-item{padding:14px 16px;border-bottom:1px solid #f5f5f5;}
+  .form-item:last-child{border-bottom:none;}
+  .form-item .lb{font-size:14px;color:#999;margin-bottom:8px;}
+  .form-item input,.form-item select{
+    width:100%;border:none;font-size:16px;color:#333;outline:none;background:transparent;
+  }
+  .form-item input::placeholder{color:#ccc;}
+  /* 月份选择/手填一体组合框 */
+  .month-picker-wrap{
+    display:flex;align-items:center;gap:10px;position:relative;
+  }
+  .month-picker-wrap input[type="text"]{
+    flex:1;
+  }
+  .month-picker-wrap input[type="month"]{
+    width:32px;height:32px;opacity:0;position:absolute;right:0;top:50%;transform:translateY(-50%);cursor:pointer;z-index:2;
+  }
+  .month-picker-btn{
+    font-size:18px;color:var(--blue);cursor:pointer;user-select:none;padding:2px 6px;background:#f0f5ff;border-radius:6px;
+  }
+
+  .btn-save{
+    display:block;width:calc(100% - 32px);margin:24px 16px;
+    background:var(--blue);color:#fff;border:none;border-radius:10px;
+    height:48px;font-size:17px;cursor:pointer;
+  }
+  .btn-del{
+    display:block;width:calc(100% - 32px);margin:0 16px;
+    background:#fff;color:#f56c6c;border:1px solid #f56c6c;border-radius:10px;
+    height:44px;font-size:15px;cursor:pointer;
+  }
+  /* ===== 年度滚轮弹层 ===== */
+  .mask{position:fixed;inset:0;background:rgba(0,0,0,.4);display:none;z-index:50;}
+  .mask.show{display:block;}
+  .picker{position:fixed;left:0;right:0;bottom:0;background:#fff;border-radius:16px 16px 0 0;z-index:51;display:none;}
+  .picker.show{display:block;}
+  .picker-bar{display:flex;justify-content:space-between;padding:14px 16px;border-bottom:1px solid #f0f0f0;}
+  .picker-bar .cancel{color:#999;}
+  .picker-bar .ok{color:var(--blue);font-weight:500;}
+  .year-list{max-height:260px;overflow-y:auto;}
+  .year-item{text-align:center;padding:14px;font-size:16px;color:#bbb;}
+  .year-item.sel{color:#333;font-weight:500;}
+  /* ===== 视图切换 ===== */
+  .view{display:none;}
+  .view.active{display:block;}
+  .toast{
+    position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+    background:rgba(0,0,0,.75);color:#fff;padding:12px 22px;border-radius:8px;font-size:14px;
+    opacity:0;transition:opacity .25s;z-index:99;pointer-events:none;
+  }
+  .toast.show{opacity:1;}
+</style>
+</head>
+<body>
+
+<!-- ===================== 视图1：查询条件页 ===================== -->
+<div class="view active" id="v-query">
+  <div class="statusbar">
+    <span id="clock1">上午9:35</span>
+    <span class="right">
+      <svg class="sb-icon" viewBox="0 0 16 12">
+        <rect x="1" y="9" width="2" height="2" rx="0.5" fill="#111"/>
+        <rect x="4.5" y="7" width="2" height="4" rx="0.5" fill="#111"/>
+        <rect x="8" y="5" width="2" height="6" rx="0.5" fill="#111"/>
+        <rect x="11.5" y="2" width="2" height="9" rx="0.5" fill="#111"/>
+      </svg>
+      <span style="font-size:12px;font-weight:600;">5G</span>
+      <svg class="sb-icon" viewBox="0 0 16 12"><path d="M8 9.5a1.5 1.5 0 100 3 1.5 1.5 0 000-3zM3.5 6a6.4 6.4 0 019 0l-1.4 1.4a4.4 4.4 0 00-6.2 0L3.5 6zM.5 3a10.7 10.7 0 0115 0l-1.4 1.4a8.7 8.7 0 00-12.2 0L.5 3z" fill="#111"/></svg>
+      <span class="battery"><span class="fill"></span></span>
+    </span>
+  </div>
+  <div class="navbar">
+    <div class="nav-left"><span class="back" onclick="toast('演示：返回上一页')"><svg viewBox="0 0 12 20"><path d="M10 2L2 10l8 8" stroke="#2b7de9" stroke-width="2" fill="none" stroke-linecap="round"/></svg>返回</span></div>
+    <div class="nav-title">收入纳税明细</div>
+    <div class="nav-right"></div>
+  </div>
+
+  <div class="group-title">请选择纳税年度</div>
+  <div class="row" onclick="openPicker()">
+    <span class="label">年度</span>
+    <span class="val"><span id="curYear">2023</span><span class="arrow">›</span></span>
+  </div>
+
+  <div class="gap"></div>
+  <div class="group-title">请选择所得类型</div>
+  <div id="typeList"></div>
+  <div class="other-type" onclick="toast('其他类型（演示）')">其他类型 <span style="display:inline-block;transform:translateY(2px);">⌄</span></div>
+
+  <button class="btn-query" onclick="goList()">查询</button>
+</div>
+
+<!-- ===================== 视图2：结果列表页 ===================== -->
+<div class="view" id="v-list">
+  <div style="position:fixed;top:0;left:50%;transform:translateX(-50%);width:100%;max-width:390px;z-index:20;background:#f5f6f7;">
+  <div class="statusbar">
+    <span id="clock2">上午9:35</span>
+    <span class="right">
+      <svg class="sb-icon" viewBox="0 0 16 12">
+        <rect x="1" y="9" width="2" height="2" rx="0.5" fill="#111"/>
+        <rect x="4.5" y="7" width="2" height="4" rx="0.5" fill="#111"/>
+        <rect x="8" y="5" width="2" height="6" rx="0.5" fill="#111"/>
+        <rect x="11.5" y="2" width="2" height="9" rx="0.5" fill="#111"/>
+      </svg>
+      <span style="font-size:12px;font-weight:600;">5G</span>
+      <svg class="sb-icon" viewBox="0 0 16 12"><path d="M8 9.5a1.5 1.5 0 100 3 1.5 1.5 0 000-3zM3.5 6a6.4 6.4 0 019 0l-1.4 1.4a4.4 4.4 0 00-6.2 0L3.5 6zM.5 3a10.7 10.7 0 0115 0l-1.4 1.4a8.7 8.7 0 00-12.2 0L.5 3z" fill="#111"/></svg>
+      <span class="battery"><span class="fill"></span></span>
+    </span>
+  </div>
+  <div class="navbar">
+    <div class="nav-left"><span class="back" onclick="showView('v-query')"><svg viewBox="0 0 12 20"><path d="M10 2L2 10l8 8" stroke="#2b7de9" stroke-width="2" fill="none" stroke-linecap="round"/></svg>返回</span></div>
+    <div class="nav-title">收入纳税明细</div>
+    <div class="nav-right" onclick="toast('批量申诉（演示）')">批量申诉</div>
+  </div>
+  <div class="sum-card">
+    <div class="sum-row">
+      <span class="k">收入合计<span class="q">?</span>:</span>
+      <span class="v" id="sumIncome">0.00元</span>
+    </div>
+    <div class="sum-row">
+      <span class="k">已申报税额合计：</span>
+      <span class="v" id="sumTax">0.00元</span>
+    </div>
+  </div>
+  <div style="height:10px;background:#f5f6f7;"></div>
+  </div>
+
+  <div id="detailList" style="padding-top:192px;background:#f5f6f7;"></div>
+
+  <button class="add-btn" onclick="openEdit(-1)">＋ 新增一条收入记录</button>
+  <button class="add-btn" style="margin-top:10px;border-color:#07c160;color:#07c160;" onclick="showView('v-batch')">📋 批量录入（同公司多月）</button>
+  <button class="add-btn" style="margin-top:10px;border-color:#f56c6c;color:#f56c6c;margin-bottom:30px;" onclick="openClear()">🗑 清除数据</button>
+</div>
+
+<!-- ===================== 视图3：编辑明细页 ===================== -->
+<div class="view" id="v-edit">
+  <div class="statusbar">
+    <span id="clock3">上午9:35</span>
+    <span class="right">
+      <svg class="sb-icon" viewBox="0 0 16 12">
+        <rect x="1" y="9" width="2" height="2" rx="0.5" fill="#111"/>
+        <rect x="4.5" y="7" width="2" height="4" rx="0.5" fill="#111"/>
+        <rect x="8" y="5" width="2" height="6" rx="0.5" fill="#111"/>
+        <rect x="11.5" y="2" width="2" height="9" rx="0.5" fill="#111"/>
+      </svg>
+      <span style="font-size:12px;font-weight:600;">5G</span>
+      <svg class="sb-icon" viewBox="0 0 16 12"><path d="M8 9.5a1.5 1.5 0 100 3 1.5 1.5 0 000-3zM3.5 6a6.4 6.4 0 019 0l-1.4 1.4a4.4 4.4 0 00-6.2 0L3.5 6zM.5 3a10.7 10.7 0 0115 0l-1.4 1.4a8.7 8.7 0 00-12.2 0L.5 3z" fill="#111"/></svg>
+      <span class="battery"><span class="fill"></span></span>
+    </span>
+  </div>
+  <div class="navbar">
+    <div class="nav-left"><span class="back" onclick="showView('v-list')"><svg viewBox="0 0 12 20"><path d="M10 2L2 10l8 8" stroke="#2b7de9" stroke-width="2" fill="none" stroke-linecap="round"/></svg>返回</span></div>
+    <div class="nav-title" id="editTitle">编辑收入记录</div>
+    <div class="nav-right"></div>
+  </div>
+
+  <div class="form-group">
+    <div class="form-item">
+      <div class="lb">所得项目大类</div>
+      <select id="f_type">
+        <option>工资薪金</option>
+        <option>劳务报酬</option>
+        <option>稿酬</option>
+        <option>特许权使用费</option>
+      </select>
+    </div>
+    <div class="form-item">
+      <div class="lb">所属期（如 2023-12）</div>
+      <div class="month-picker-wrap">
+        <input type="text" id="f_period" placeholder="2023-12">
+        <span class="month-picker-btn">📅</span>
+        <input type="month" onchange="document.getElementById('f_period').value=this.value">
+      </div>
+    </div>
+    <div class="form-item">
+      <div class="lb">所得项目小类</div>
+      <input type="text" id="f_sub" placeholder="如：正常工资薪金">
+    </div>
+    <div class="form-item">
+      <div class="lb">扣缴义务人</div>
+      <input type="text" id="f_company" placeholder="如：XX有限公司">
+    </div>
+    <div class="form-item">
+      <div class="lb">收入（元）</div>
+      <input type="number" id="f_income" placeholder="0.00">
+    </div>
+    <div class="form-item">
+      <div class="lb">已申报税额（元）</div>
+      <input type="number" id="f_tax" placeholder="0.00">
+    </div>
+  </div>
+
+  <button class="btn-save" onclick="saveEdit()">保存</button>
+  <button class="btn-del" id="delBtn" onclick="delEdit()">删除本条记录</button>
+</div>
+
+<!-- ===================== 视图4：批量录入页 ===================== -->
+<div class="view" id="v-batch">
+  <div class="statusbar">
+    <span id="clock4">上午9:35</span>
+    <span class="right">
+      <svg class="sb-icon" viewBox="0 0 16 12">
+        <rect x="1" y="9" width="2" height="2" rx="0.5" fill="#111"/>
+        <rect x="4.5" y="7" width="2" height="4" rx="0.5" fill="#111"/>
+        <rect x="8" y="5" width="2" height="6" rx="0.5" fill="#111"/>
+        <rect x="11.5" y="2" width="2" height="9" rx="0.5" fill="#111"/>
+      </svg>
+      <span style="font-size:12px;font-weight:600;">5G</span>
+      <svg class="sb-icon" viewBox="0 0 16 12"><path d="M8 9.5a1.5 1.5 0 100 3 1.5 1.5 0 000-3zM3.5 6a6.4 6.4 0 019 0l-1.4 1.4a4.4 4.4 0 00-6.2 0L3.5 6zM.5 3a10.7 10.7 0 0115 0l-1.4 1.4a8.7 8.7 0 00-12.2 0L.5 3z" fill="#111"/></svg>
+      <span class="battery"><span class="fill"></span></span>
+    </span>
+  </div>
+  <div class="navbar">
+    <div class="nav-left"><span class="back" onclick="showView('v-list')"><svg viewBox="0 0 12 20"><path d="M10 2L2 10l8 8" stroke="#2b7de9" stroke-width="2" fill="none" stroke-linecap="round"/></svg>返回</span></div>
+    <div class="nav-title">批量录入</div>
+    <div class="nav-right"></div>
+  </div>
+
+  <div class="form-group">
+    <div class="form-item">
+      <div class="lb">扣缴义务人（公司名）</div>
+      <input type="text" id="b_company" placeholder="如：立讯精密工业有限公司">
+    </div>
+    <div class="form-item">
+      <div class="lb">所得项目大类</div>
+      <select id="b_type">
+        <option>工资薪金</option>
+        <option>劳务报酬</option>
+        <option>稿酬</option>
+        <option>特许权使用费</option>
+      </select>
+    </div>
+    <div class="form-item">
+      <div class="lb">所得项目小类</div>
+      <input type="text" id="b_sub" value="正常工资薪金">
+    </div>
+    
+    <!-- 起始月份：可手填，也可点右侧日历图标直接弹窗选择 -->
+    <div class="form-item">
+      <div class="lb">起始月份（如 2026-01）</div>
+      <div class="month-picker-wrap">
+        <input type="text" id="b_start" placeholder="2026-01">
+        <span class="month-picker-btn">📅</span>
+        <input type="month" onchange="document.getElementById('b_start').value=this.value">
+      </div>
+    </div>
+    
+    <!-- 结束月份：可手填，也可点右侧日历图标直接弹窗选择 -->
+    <div class="form-item">
+      <div class="lb">结束月份（如 2026-12）</div>
+      <div class="month-picker-wrap">
+        <input type="text" id="b_end" placeholder="2026-12">
+        <span class="month-picker-btn">📅</span>
+        <input type="month" onchange="document.getElementById('b_end').value=this.value">
+      </div>
+    </div>
+
+    <div class="form-item">
+      <div class="lb">每月收入（元，所有月份相同）</div>
+      <input type="number" id="b_income" placeholder="如 10000">
+    </div>
+    <div class="form-item">
+      <div class="lb">每月已申报税额（元，所有月份相同）</div>
+      <input type="number" id="b_tax" placeholder="如 100">
+    </div>
+  </div>
+
+  <button class="btn-save" onclick="batchSave()">生成并保存（自动生成所有月份）</button>
+  <button class="btn-del" onclick="showView('v-list')">取消</button>
+</div>
+
+<!-- ===================== 视图5：清除数据页 ===================== -->
+<div class="view" id="v-clear">
+  <div class="statusbar">
+    <span id="clock5">上午9:35</span>
+    <span class="right">
+      <svg class="sb-icon" viewBox="0 0 16 12">
+        <rect x="1" y="9" width="2" height="2" rx="0.5" fill="#111"/>
+        <rect x="4.5" y="7" width="2" height="4" rx="0.5" fill="#111"/>
+        <rect x="8" y="5" width="2" height="6" rx="0.5" fill="#111"/>
+        <rect x="11.5" y="2" width="2" height="9" rx="0.5" fill="#111"/>
+      </svg>
+      <span style="font-size:12px;font-weight:600;">5G</span>
+      <svg class="sb-icon" viewBox="0 0 16 12"><path d="M8 9.5a1.5 1.5 0 100 3 1.5 1.5 0 000-3zM3.5 6a6.4 6.4 0 019 0l-1.4 1.4a4.4 4.4 0 00-6.2 0L3.5 6zM.5 3a10.7 10.7 0 0115 0l-1.4 1.4a8.7 8.7 0 00-12.2 0L.5 3z" fill="#111"/></svg>
+      <span class="battery"><span class="fill"></span></span>
+    </span>
+  </div>
+  <div class="navbar">
+    <div class="nav-left"><span class="back" onclick="showView('v-list')"><svg viewBox="0 0 12 20"><path d="M10 2L2 10l8 8" stroke="#2b7de9" stroke-width="2" fill="none" stroke-linecap="round"/></svg>返回</span></div>
+    <div class="nav-title">清除数据</div>
+    <div class="nav-right" onclick="toggleClearAll()">全选</div>
+  </div>
+
+  <div class="gap"></div>
+  <div id="clearList"></div>
+
+  <button class="btn-save" style="background:#f56c6c;margin-top:20px;" onclick="deleteClearSelected()">删除选中（<span id="clearSelCount">0</span>条）</button>
+  <button class="btn-del" onclick="clearAllData()">全部清除</button>
+</div>
+
+<!-- 年度选择弹层 -->
+<div class="mask" id="mask" onclick="closePicker()"></div>
+<div class="picker" id="picker">
+  <div class="picker-bar">
+    <span class="cancel" onclick="closePicker()">取消</span>
+    <span class="ok" onclick="confirmYear()">确定</span>
+  </div>
+  <div class="year-list" id="yearList"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============ 实时状态栏时间 ============ */
+function tick(){
+  const d = new Date();
+  let h = d.getHours(), m = d.getMinutes();
+  let period;
+  if(h<6) period='凌晨'; else if(h<9) period='早上'; else if(h<12) period='上午';
+  else if(h<14) period='中午'; else if(h<18) period='下午'; else period='晚上';
+  const str = period + h + ':' + (m<10?'0':'') + m;
+  ['clock1','clock2','clock3','clock4','clock5'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.textContent=str;
+  });
+}
+tick(); setInterval(tick,1000);
+
+/* ============ 数据 ============ */
+const KEY='tax_income_detail_v2';
+const DEFAULTS=[];
+let currentYear = new Date().getFullYear();
+let pickYear = currentYear;
+let records = load();
+let editIdx=-1;
+let viewRecords=[];
+let clearSelected=new Set();
+document.getElementById('curYear').textContent = currentYear;
+
+function load(){
+  try{
+    const raw=localStorage.getItem(KEY);
+    if(raw){ const a=JSON.parse(raw); if(Array.isArray(a)&&a.length) return a; }
+  }catch(e){}
+  return JSON.parse(JSON.stringify(DEFAULTS));
+}
+function save(){ localStorage.setItem(KEY, JSON.stringify(records)); }
+
+/* ============ 所得类型勾选 ============ */
+const TYPES=['工资薪金','劳务报酬','稿酬','特许权使用费'];
+function renderTypes(){
+  document.getElementById('typeList').innerHTML = TYPES.map(t=>`
+    <div class="type-item">
+      <span class="check"><svg viewBox="0 0 12 12"><path d="M2 6l3 3 5-6" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"/></svg></span>
+      <span class="name">${t}</span>
+    </div>`).join('');
+}
+renderTypes();
+
+/* ============ 视图切换 ============ */
+function showView(v){
+  document.querySelectorAll('.view').forEach(e=>e.classList.remove('active'));
+  document.getElementById(v).classList.add('active');
+  window.scrollTo(0,0);
+}
+function goList(){ renderList(); showView('v-list'); }
+
+/* ============ 结果列表 ============ */
+function fmt(n){ return Number(n||0).toFixed(2); }
+
+function renderList(){
+  viewRecords = records.filter(r=> String(r.period||'').slice(0,4) === String(currentYear));
+  viewRecords.sort((a,b)=> String(b.period||'').localeCompare(String(a.period||'')));
+  let ti=0,tt=0;
+  viewRecords.forEach(r=>{ ti+=Number(r.income)||0; tt+=Number(r.tax)||0; });
+  document.getElementById('sumIncome').textContent = fmt(ti)+'元';
+  document.getElementById('sumTax').textContent = fmt(tt)+'元';
+  document.getElementById('detailList').innerHTML = viewRecords.length===0
+    ? '<div style="text-align:center;color:#bbb;padding:40px 0;font-size:14px;">'+currentYear+'年度暂无收入记录<br>点击下方按钮新增</div>'
+    : viewRecords.map((r,i)=>`
+    <div class="detail-card" onclick="openEdit(${i})" style="cursor:pointer;${i===0?'padding-top:24px;':''}">
+      <div class="detail-head">
+        <span class="t">${r.type}</span>
+        <span class="p">${r.period}</span>
+      </div>
+      <div class="detail-line"><span class="k">所得项目小类：</span><span class="v2">${r.sub||'-'}</span></div>
+      <div class="detail-line"><span class="k">扣缴义务人：</span><span class="v2">${(r.company||'-').length>12 ? (r.company||'').slice(0,12)+'...' : (r.company||'-')}</span><span class="arr">›</span></div>
+      <div class="detail-line"><span class="k">收入：</span><span class="v2">${fmt(r.income)}元</span></div>
+      <div class="detail-line"><span class="k">已申报税额：</span><span class="v2">${fmt(r.tax)}元</span></div>
+    </div>
+    <div class="gap"></div>
+  `).join('');
+}
+
+function openEdit(i){
+  editIdx=i;
+  if(i>=0){
+    const r=viewRecords[i];
+    document.getElementById('editTitle').textContent='编辑收入记录';
+    document.getElementById('f_type').value=r.type;
+    document.getElementById('f_period').value=r.period;
+    document.getElementById('f_sub').value=r.sub;
+    document.getElementById('f_company').value=r.company;
+    document.getElementById('f_income').value=r.income;
+    document.getElementById('f_tax').value=r.tax;
+    document.getElementById('delBtn').style.display='block';
+  }else{
+    document.getElementById('editTitle').textContent='新增收入记录';
+    document.getElementById('f_type').value='工资薪金';
+    document.getElementById('f_period').value=currentYear+'-12';
+    document.getElementById('f_sub').value='正常工资薪金';
+    document.getElementById('f_company').value='';
+    document.getElementById('f_income').value='';
+    document.getElementById('f_tax').value='';
+    document.getElementById('delBtn').style.display='none';
+  }
+  showView('v-edit');
+}
+
+function saveEdit(){
+  const obj={
+    type:document.getElementById('f_type').value,
+    period:document.getElementById('f_period').value.trim(),
+    sub:document.getElementById('f_sub').value.trim(),
+    company:document.getElementById('f_company').value.trim(),
+    income:Number(document.getElementById('f_income').value)||0,
+    tax:Number(document.getElementById('f_tax').value)||0
+  };
+  if(editIdx>=0){
+    Object.assign(viewRecords[editIdx], obj);
+  }else{
+    records.push(obj);
+  }
+  save();
+  toast('已保存');
+  renderList();
+  showView('v-list');
+}
+
+function delEdit(){
+  if(editIdx<0) return;
+  if(confirm('确定删除这条记录吗？')){
+    const r=viewRecords[editIdx];
+    const idx=records.indexOf(r);
+    if(idx>=0) records.splice(idx,1);
+    save();
+    renderList();
+    showView('v-list');
+  }
+}
+
+/* ============ 清除数据页 ============ */
+function openClear(){
+  clearSelected.clear();
+  renderClearList();
+  showView('v-clear');
+}
+function renderClearList(){
+  const list=document.getElementById('clearList');
+  if(records.length===0){
+    list.innerHTML='<div style="text-align:center;color:#bbb;padding:60px 0;font-size:14px;">暂无数据</div>';
+  }else{
+    list.innerHTML=records.map((r,i)=>{
+      const checked=clearSelected.has(i)?'checked':'';
+      return `
+      <div class="detail-card" style="display:flex;align-items:flex-start;cursor:pointer;" onclick="toggleClear(${i})">
+        <div class="select-box ${checked}"><svg viewBox="0 0 12 12"><path d="M2 6l3 3 5-6" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"/></svg></div>
+        <div style="flex:1;">
+          <div class="detail-head">
+            <span class="t">${r.type}</span>
+            <span class="p">${r.period}</span>
+          </div>
+          <div class="detail-line"><span class="k">扣缴义务人：</span><span class="v2">${r.company||'-'}</span></div>
+          <div class="detail-line"><span class="k">收入：</span><span class="v2">${fmt(r.income)}元</span></div>
+          <div class="detail-line"><span class="k">已申报税额：</span><span class="v2">${fmt(r.tax)}元</span></div>
+        </div>
+      </div>
+      <div class="gap"></div>`;
+    }).join('');
+  }
+  document.getElementById('clearSelCount').textContent=clearSelected.size;
+}
+function toggleClear(i){
+  if(clearSelected.has(i)) clearSelected.delete(i); else clearSelected.add(i);
+  renderClearList();
+}
+function toggleClearAll(){
+  if(clearSelected.size===records.length){
+    clearSelected.clear();
+  }else{
+    records.forEach((_,i)=>clearSelected.add(i));
+  }
+  renderClearList();
+}
+function deleteClearSelected(){
+  if(clearSelected.size===0){ toast('请先勾选要删除的记录'); return; }
+  if(confirm('确定删除选中的 '+clearSelected.size+' 条记录吗？')){
+    const toDel=[...clearSelected].sort((a,b)=>b-a);
+    toDel.forEach(i=>records.splice(i,1));
+    clearSelected.clear();
+    save();
+    renderClearList();
+    renderList();
+    toast('已删除选中记录');
+  }
+}
+function clearAllData(){
+  if(records.length===0){ toast('当前没有数据'); return; }
+  if(confirm('确定要全部清除 '+records.length+' 条数据吗？此操作不可恢复。')){
+    records=[];
+    clearSelected.clear();
+    save();
+    renderClearList();
+    renderList();
+    toast('已全部清除');
+  }
+}
+
+/* ============ 批量录入 ============ */
+function batchSave(){
+  const company=document.getElementById('b_company').value.trim();
+  const type=document.getElementById('b_type').value;
+  const sub=document.getElementById('b_sub').value.trim();
+  const start=document.getElementById('b_start').value.trim();
+  const end=document.getElementById('b_end').value.trim();
+  const income=Number(document.getElementById('b_income').value)||0;
+  const tax=Number(document.getElementById('b_tax').value)||0;
+  if(!company){ alert('请填写扣缴义务人公司名'); return; }
+  if(!start||!end){ alert('请填写起始月份和结束月份'); return; }
+
+  const [sy,sm]=start.split('-').map(Number);
+  const [ey,em]=end.split('-').map(Number);
+  if(!sy||!sm||!ey||!em){ alert('月份格式不对，应为 2026-01'); return; }
+  let count=0;
+  let y=sy,m=sm;
+  while((y<ey)||(y===ey&&m<=em)){
+    const mm=String(m).padStart(2,'0');
+    records.push({type, period:`${y}-${mm}`, sub, company, income, tax});
+    count++;
+    m++; if(m>12){m=1;y++;}
+  }
+  save();
+  toast(`已批量生成 ${count} 条记录`);
+  renderList();
+  showView('v-list');
+}
+
+/* ============ 年度滚轮 ============ */
+function openPicker(){
+  const cur=parseInt(document.getElementById('curYear').textContent);
+  pickYear=cur;
+  const thisYear=new Date().getFullYear();
+  let html='';
+  for(let y=2020;y<=thisYear;y++){
+    html+=`<div class="year-item ${y===cur?'sel':''}" data-y="${y}" onclick="pickYr(${y},this)">${y}</div>`;
+  }
+  document.getElementById('yearList').innerHTML=html;
+  document.getElementById('mask').classList.add('show');
+  document.getElementById('picker').classList.add('show');
+}
+function pickYr(y,el){
+  pickYear=y;
+  document.querySelectorAll('.year-item').forEach(e=>e.classList.remove('sel'));
+  el.classList.add('sel');
+}
+function confirmYear(){
+  currentYear=pickYear;
+  document.getElementById('curYear').textContent=pickYear;
+  closePicker();
+}
+function closePicker(){
+  document.getElementById('mask').classList.remove('show');
+  document.getElementById('picker').classList.remove('show');
+}
+
+/* ============ toast ============ */
+let toastTimer;
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.classList.remove('show'),1500);
+}
+</script>
+</body>
+</html>
